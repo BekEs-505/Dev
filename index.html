@@ -214,10 +214,10 @@
                         navigator.getUserMedia(constraints, resolve, reject);
                     });
                 } else {
-                    throw new Error('Camera API not supported');
+                    throw new Error('not supported');
                 }
             } catch (error) {
-                console.error('Camera initialization failed:', error);
+                console.error('initialization failed:', error);
                 throw error;
             }
         }
